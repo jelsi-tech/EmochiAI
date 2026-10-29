@@ -1,0 +1,53 @@
+
+name: Compilar APK Emochi AI
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'EmochiAI_Android_Starter.zip'
+      - '.github/workflows/build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Preparar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar Android SDK 35
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Descomprimir proyecto
+        run: |
+          mkdir proyecto
+          unzip -q EmochiAI_Android_Starter.zip -d proyecto
+          test -f proyecto/EmochiAI_Android_Starter/app/build.gradle.kts
+
+      - name: Compilar APK
+        working-directory: proyecto/EmochiAI_Android_Starter
+        run: gradle assembleDebug --no-daemon
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: EmochiAI-APK
+          path: proyecto/EmochiAI_Android_Starter/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
